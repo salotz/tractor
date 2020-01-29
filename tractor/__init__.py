@@ -52,10 +52,14 @@ async def _main(
 ) -> typing.Any:
     """Async entry point for ``tractor``.
     """
+
     logger = log.get_logger('tractor')
+
     main = partial(async_fn, *args)
+
     arbiter_addr = (host, port) = arbiter_addr or (
             _default_arbiter_host, _default_arbiter_port)
+
     loglevel = kwargs.get('loglevel', log.get_loglevel())
     if loglevel is not None:
         log._default_loglevel = loglevel
@@ -70,8 +74,11 @@ async def _main(
         logger.warning(f"No actor could be found @ {host}:{port}")
 
     # create a local actor and start up its main routine/task
-    if arbiter_found:  # we were able to connect to an arbiter
+    if arbiter_found:
+
+        # we were able to connect to an arbiter
         logger.info(f"Arbiter seems to exist @ {host}:{port}")
+
         actor = Actor(
             name or 'anonymous',
             arbiter_addr=arbiter_addr,
@@ -83,34 +90,64 @@ async def _main(
         actor = Arbiter(
             name or 'arbiter', arbiter_addr=arbiter_addr, **kwargs)
 
-    # ``Actor._async_main()`` creates an internal nursery if one is not
-    # provided and thus blocks here until it's main task completes.
-    # Note that if the current actor is the arbiter it is desirable
-    # for it to stay up indefinitely until a re-election process has
-    # taken place - which is not implemented yet FYI).
+    # ``Actor._async_main()`` creates an internal nursery if one is
+    # not provided and thus blocks here until it's main task
+    # completes.  Note that if the current actor is the arbiter it is
+    # desirable for it to stay up indefinitely
+
+    # IDEA until a re-election process has taken place - which is not
+    # implemented yet FYI).
     return await _start_actor(
         actor, main, host, port, arbiter_addr=arbiter_addr
     )
 
 
+# ALERT, TOREV: I think that there should be some convention here for
+# passing kwargs to the trio.run function. I would suggest reserving
+# the **kwargs for that since it will then have the same signature
+# (except for the extra positionals for the tractor.run). So you would
+# add an extra fn_kwargs argument.
 def run(
     async_fn: typing.Callable[..., typing.Awaitable],
     *args,
     name: Optional[str] = None,
     arbiter_addr: Tuple[str, int] = (
         _default_arbiter_host, _default_arbiter_port),
-    # either the `multiprocessing` start method:
-    # https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
-    # OR `trio_run_in_process` (the new default).
     start_method: Optional[str] = None,
     **kwargs,
 ) -> Any:
     """Run a trio-actor async function in process.
 
     This is tractor's main entry and the start point for any async actor.
+
+    Parameters
+    ----------
+
+    async_fn
+
+    args
+        the args to the async_fn
+
+    name
+
+    arbiter_addr : str
+        either the `multiprocessing` start method:
+        https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
+        OR `trio_run_in_process` (the new default).
+
+    start_method
+
+    kwargs
+        The kwargs to the async_fn
+
     """
+
     if start_method is not None:
         _spawn.try_set_start_method(start_method)
+
+    # ALERT: shouldn't you be allowing the passing in of trio.run
+    # kwargs like instruments? Or are those going to be managed by
+    # tractor somehow?
     return trio.run(_main, async_fn, args, kwargs, arbiter_addr, name)
 
 

@@ -161,6 +161,8 @@ class Actor:
     """
     is_arbiter: bool = False
 
+    # QUEST: how is this even legal syntax? What does this default to?
+
     # placeholders filled in by `_async_main` after fork
     _root_nursery: trio.Nursery
     _server_nursery: trio.Nursery
@@ -840,7 +842,7 @@ class Arbiter(Actor):
     coordination purposes. If a new main process is launched and an
     arbiter is already running that arbiter will be used.
     """
-    is_arbiter = True
+    is_arbiter: bool = True
 
     def __init__(self, *args, **kwargs):
         self._registry = defaultdict(list)
@@ -908,6 +910,7 @@ async def _start_actor(
     Blocks if no nursery is provided, in which case it is expected the nursery
     provider is responsible for waiting on the task to complete.
     """
+
     # assign process-local actor
     _state._current_actor = actor
 
@@ -916,6 +919,7 @@ async def _start_actor(
     log.info(f"Starting local {actor} @ {host}:{port}")
 
     async with trio.open_nursery() as nursery:
+
         await nursery.start(
             partial(
                 actor._async_main,

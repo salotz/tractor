@@ -12,6 +12,9 @@ import trio
 from trio_typing import TaskStatus
 from async_generator import aclosing
 
+# SMELL: there is a little bit of an overloading of the name
+# "spawn" here.
+
 try:
     from multiprocessing import semaphore_tracker  # type: ignore
     resource_tracker = semaphore_tracker
@@ -51,6 +54,8 @@ else:
         await trio.hazmat.wait_readable(proc.sentinel)
 
 
+# REFACT: don't think this should be an Option type since you punt on
+# the the 'trio_run_in_process' context case
 def try_set_start_method(name: str) -> Optional[mp.context.BaseContext]:
     """Attempt to set the start method for ``multiprocess.Process`` spawning.
 
@@ -72,11 +77,16 @@ def try_set_start_method(name: str) -> Optional[mp.context.BaseContext]:
         raise ValueError(
             f"Spawn method `{name}` is invalid please choose one of {methods}"
         )
+
+    # QUEST: why does forkserver need overriden and patched? Is this
+    # documented elsewhere?
     elif name == 'forkserver':
         _forkserver_override.override_stdlib()
         _ctx = mp.get_context(name)
+
     elif name == 'trio_run_in_process':
         _ctx = None
+
     else:
         _ctx = mp.get_context(name)
 

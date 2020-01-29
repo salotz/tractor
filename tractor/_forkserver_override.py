@@ -347,6 +347,17 @@ def override_stdlib():
     and semaphore trackers for each actor nursery used to create new
     sub-actors from sub-actors.
     """
+
+    # SMELL: wouldn't this code work, and have a lower surface area
+    # for unintentionally error catching. This should at least have an
+    # explanatory comment
+    #
+    # try:
+    #     resource_tracker._semaphore_tracker = _resource_tracker
+    # except AttributeError:
+    #     pass
+    # resource_tracker._resource_tracker = _resource_tracker
+
     try:
         resource_tracker._semaphore_tracker = _resource_tracker
         resource_tracker._resource_tracker = _resource_tracker
